@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LLM Factory - Interactive Pipeline Visualization</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>    <!-- Header Banner -->
+    <div class="top-banner">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-10 offset-md-1 text-center">
+            <h1><i class="bi bi-cpu"></i> <strong>LLM Factory</strong></h1>
+            <h2 class="subtitle"><i class="bi bi-diagram-3"></i> Interactive Pipeline Visualization & Analysis</h2>
+            <p class="lead">Comprehensive fine-tuning pipeline with detailed statistics, visualizations, and real-time insights</p>
+            <div class="version-badge">
+              <span class="badge bg-primary">v2.0</span>
+              <span class="badge bg-success">Enhanced Analytics</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="container">
+      <!-- Navigation Pills -->
+      <ul class="nav nav-pills mb-4 justify-content-center" id="step-tabs" role="tablist">
+        {% for step in steps %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if loop.first %}active{% endif %}" 
+                  id="step{{ loop.index }}-tab" 
+                  data-bs-toggle="pill" 
+                  data-bs-target="#step{{ loop.index }}" 
+                  type="button" 
+                  role="tab" 
+                  aria-controls="step{{ loop.index }}" 
+                  aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+            <span class="step-icon">{{ step.icon }}</span> {{ step.title }}
+          </button>
+        </li>
+        {% endfor %}
+      </ul>
+      
+      <!-- Tab content -->
+      <div class="tab-content" id="step-tabsContent">
+        {% for step in steps %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+             id="step{{ loop.index }}" 
+             role="tabpanel" 
+             aria-labelledby="step{{ loop.index }}-tab">
+          
+          <div class="step-card">
+            <div class="step-header">
+              <span class="step-icon">{{ step.icon }}</span>
+              <span>{{ step.title }}</span>
+            </div>
+            <div class="card-body">
+              {% if step.title == 'Raw Data' %}
+                <div class="row">
+                  <div class="col-md-8">
+                    <h5>Sample Data</h5>
+                    {{ step.content.table | safe }}
+                  </div>
+                  <div class="col-md-4">
+                    <h5>Data Statistics</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        <p>Total samples: {{ step.content.counts.get(0, 0) + step.content.counts.get(1, 0) }}</p>
+                        <p>Negative samples: {{ step.content.counts.get(0, 0) }}</p>
+                        <p>Positive samples: {{ step.content.counts.get(1, 0) }}</p>
+                        <hr>
+                        <strong>Class Balance:</strong>
+                        <ul class="mb-1">
+                          <li>Negative Ratio: {{ (step.content.class_balance.negative_ratio * 100)|round(1) }}%</li>
+                          <li>Positive Ratio: {{ (step.content.class_balance.positive_ratio * 100)|round(1) }}%</li>
+                          <li>Balance Score: {{ step.content.class_balance.balance_score|round(3) }}</li>
+                        </ul>
+                        <hr>
+                        <strong>Text Length (chars):</strong>
+                        <ul class="mb-1">
+                          <li>Min: {{ step.content.text_length_stats.min }}</li>
+                          <li>Max: {{ step.content.text_length_stats.max }}</li>
+                          <li>Mean: {{ step.content.text_length_stats.mean|round(2) }}</li>
+                          <li>Median: {{ step.content.text_length_stats.median }}</li>
+                          <li>Std: {{ step.content.text_length_stats.std|round(2) }}</li>
+                        </ul>
+                        <strong>Text Length (words):</strong>
+                        <ul>
+                          <li>Min: {{ step.content.word_length_stats.min }}</li>
+                          <li>Max: {{ step.content.word_length_stats.max }}</li>
+                          <li>Mean: {{ step.content.word_length_stats.mean|round(2) }}</li>
+                          <li>Median: {{ step.content.word_length_stats.median }}</li>
+                          <li>Std: {{ step.content.word_length_stats.std|round(2) }}</li>
+                        </ul>
+                        <hr>
+                        <strong>Vocabulary Analysis:</strong>
+                        <ul>
+                          <li>Unique Words: {{ step.content.vocab_analysis.vocab_size|format_number }}</li>
+                          <li>Total Words: {{ step.content.vocab_analysis.total_words|format_number }}</li>
+                          <li>Avg Word Freq: {{ step.content.vocab_analysis.avg_word_freq|round(2) }}</li>
+                        </ul>
+                      </div>
+                    </div>                    <h5 class="mt-3">Distribution</h5>
+                    {% if step.content.chart %}
+                    <img src="data:image/png;base64,{{ step.content.chart }}" class="img-fluid chart-container">
+                    {% else %}
+                    <div class="alert alert-info">Chart could not be generated</div>
+                    {% endif %}
+                  </div>
+                </div>
+                  <h5 class="mt-4">Text Length Analysis</h5>
+                <div class="row">
+                  <div class="col-md-4">
+                    {% if step.content.text_length_chart %}
+                    <img src="data:image/png;base64,{{ step.content.text_length_chart }}" class="img-fluid chart-container">
+                    {% else %}
+                    <div class="alert alert-info">Text length chart unavailable</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    {% if step.content.word_length_chart %}
+                    <img src="data:image/png;base64,{{ step.content.word_length_chart }}" class="img-fluid chart-container">
+                    {% else %}
+                    <div class="alert alert-info">Word length chart unavailable</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4">
+                    {% if step.content.sentiment_length_chart %}
+                    <img src="data:image/png;base64,{{ step.content.sentiment_length_chart }}" class="img-fluid chart-container">
+                    {% else %}
+                    <div class="alert alert-info">Sentiment length chart unavailable</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <h5 class="mt-4">Most Common Words</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <table class="table table-sm">
+                      <thead><tr><th>Word</th><th>Frequency</th></tr></thead>
+                      <tbody>
+                        {% for word, freq in step.content.vocab_analysis.most_common %}
+                        <tr><td>{{ word }}</td><td>{{ freq }}</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                <h5 class="mt-3">Sample Reviews</h5>
+                <div class="row">
+                  {% for sample in step.content.sample_texts %}
+                  <div class="col-md-4">
+                    <div class="card">
+                      <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">
+                          Sentiment: 
+                          <span class="badge {% if sample.sentiment == 1 %}badge-positive{% else %}badge-negative{% endif %}">
+                            {% if sample.sentiment == 1 %}Positive{% else %}Negative{% endif %}
+                          </span>
+                        </h6>
+                        <p class="card-text">{{ sample.text[:200] }}{% if sample.text|length > 200 %}...{% endif %}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                
+              {% elif step.title == 'Processed Dataset' %}
+                <div class="row">
+                  <div class="col-md-4">
+                    <h5>Dataset Splits</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        {% for split, size in step.content.sizes.items() %}
+                          <div class="d-flex justify-content-between">
+                            <span>{{ split.capitalize() }}:</span>
+                            <strong>{{ size }} samples</strong>
+                          </div>
+                          {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <h5 class="mt-3">Split Statistics</h5>
+                    {% for split, stats in step.content.stats.items() %}
+                      <div class="card mb-2">
+                        <div class="card-header"><strong>{{ split.capitalize() }}</strong></div>
+                        <div class="card-body">
+                          {% if stats.class_balance %}
+                          <strong>Class Balance:</strong>
+                          <ul class="mb-1">
+                            <li>Negative: {{ (stats.class_balance.negative_ratio * 100)|round(1) }}%</li>
+                            <li>Positive: {{ (stats.class_balance.positive_ratio * 100)|round(1) }}%</li>
+                            <li>Balance Score: {{ stats.class_balance.balance_score|round(3) }}</li>
+                          </ul>
+                          {% endif %}
+                          {% if stats.text_length_stats %}
+                          <strong>Text Length:</strong>
+                          <ul class="mb-1">
+                            <li>Mean: {{ stats.text_length_stats.mean|round(2) }} chars</li>
+                            <li>Range: {{ stats.text_length_stats.min }}-{{ stats.text_length_stats.max }}</li>
+                          </ul>
+                          <strong>Word Count:</strong>
+                          <ul>
+                            <li>Mean: {{ stats.word_length_stats.mean|round(2) }} words</li>
+                            <li>Range: {{ stats.word_length_stats.min }}-{{ stats.word_length_stats.max }}</li>
+                          </ul>
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-md-8">
+                    <h5>Sample Data by Split</h5>
+                    <ul class="nav nav-tabs" id="processingTabs" role="tablist">
+                      {% for split in step.content.examples %}
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                  id="{{ split }}-tab" 
+                                  data-bs-toggle="tab" 
+                                  data-bs-target="#{{ split }}-data" 
+                                  type="button" 
+                                  role="tab" 
+                                  aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+                            {{ split.capitalize() }}
+                          </button>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="processingTabsContent">
+                      {% for split, examples in step.content.examples.items() %}
+                        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                             id="{{ split }}-data" 
+                             role="tabpanel" 
+                             aria-labelledby="{{ split }}-tab">
+                          {% for example in examples %}
+                            <div class="card mb-3">
+                              <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>Example {{ loop.index }}</span>
+                                <span class="badge {% if example.label == 1 %}badge-positive{% else %}badge-negative{% endif %}">
+                                  {% if example.label == 1 %}Positive{% else %}Negative{% endif %}
+                                </span>
+                              </div>
+                              <div class="card-body">
+                                <p>{{ example.text }}</p>
+                              </div>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                
+                {% if step.content.charts %}
+                <h5 class="mt-4">Split Analysis Charts</h5>
+                <div class="row">
+                  {% for split, charts in step.content.charts.items() %}
+                  <div class="col-md-12">
+                    <h6>{{ split.capitalize() }} Split</h6>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <img src="data:image/png;base64,{{ charts.text_length_chart }}" class="img-fluid chart-container">
+                      </div>
+                      <div class="col-md-4">
+                        <img src="data:image/png;base64,{{ charts.word_length_chart }}" class="img-fluid chart-container">
+                      </div>
+                      {% if charts.sentiment_chart %}
+                      <div class="col-md-4">
+                        <img src="data:image/png;base64,{{ charts.sentiment_chart }}" class="img-fluid chart-container">
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                
+              {% elif step.title == 'Tokenization' %}
+                <div class="row">
+                  <div class="col-md-5">
+                    <h5>Tokenization Example</h5>
+                    <div class="card mb-3">
+                      <div class="card-body">
+                        <strong>Sample Text:</strong>
+                        <p>{{ step.content.sample_text }}</p>
+                        <strong>Input IDs:</strong>
+                        <div class="token-ids">{{ step.content.input_ids }}</div>
+                        <strong>Decoded Tokens:</strong>
+                        <div class="decoded-tokens">{{ step.content.decoded_tokens }}</div>
+                        <strong>Attention Mask:</strong>
+                        <div class="attention-mask">{{ step.content.attention_visual }}</div>
+                        <strong>Label:</strong>
+                        <span class="badge {% if step.content.label == 1 %}badge-positive{% else %}badge-negative{% endif %}">
+                          {% if step.content.label == 1 %}Positive{% else %}Negative{% endif %}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <h5>Special Tokens</h5>
+                    <div class="card mb-3">
+                      <div class="card-body">
+                        {% for token_name, token_value in step.content.special_tokens.items() %}
+                        <p><strong>{{ token_name.replace('_', ' ').title() }}:</strong> {{ token_value }}</p>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    
+                    <h5>Token Type Analysis</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        <p><strong>Special Tokens:</strong> {{ step.content.token_types.special_tokens }}</p>
+                        <p><strong>Subwords:</strong> {{ step.content.token_types.subwords }}</p>
+                        <p><strong>Complete Words:</strong> {{ step.content.token_types.complete_words }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-7">
+                    <h5>Tokenization Visualization</h5>
+                    <div class="token-vis-box">
+                      {% for token in step.content.decoded_tokens %}
+                        <span class="token-vis">{{ token }}</span>
+                      {% endfor %}
+                    </div>
+                    
+                    <h5 class="mt-3">Token Length Statistics</h5>
+                    <div class="row">
+                      {% for split, stats in step.content.token_length_stats.items() %}
+                      <div class="col-md-4">
+                        <div class="card">
+                          <div class="card-header">{{ split.capitalize() }}</div>
+                          <div class="card-body">
+                            <ul class="mb-0">
+                              <li>Min: {{ stats.min }}</li>
+                              <li>Max: {{ stats.max }}</li>
+                              <li>Mean: {{ stats.mean|round(2) }}</li>
+                              <li>Median: {{ stats.median }}</li>
+                              <li>Std: {{ stats.std|round(2) }}</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                
+                <h5 class="mt-4">Token Length Distribution Charts</h5>
+                <div class="row">
+                  {% for split, chart in step.content.token_charts.items() %}
+                  <div class="col-md-4">
+                    <img src="data:image/png;base64,{{ chart }}" class="img-fluid chart-container">
+                  </div>
+                  {% endfor %}
+                </div>
+                
+                {% if step.content.token_comparison_chart %}
+                <h5 class="mt-4">Token Length Comparison</h5>
+                <div class="row">
+                  <div class="col-md-8 offset-md-2">
+                    <img src="data:image/png;base64,{{ step.content.token_comparison_chart }}" class="img-fluid chart-container">
+                  </div>
+                </div>
+                {% endif %}
+                
+              {% elif step.title == 'Model Architecture' %}
+                <div class="row">
+                  <div class="col-md-6">
+                    <h5>Model Details</h5>
+                    <ul>
+                      <li><strong>Name:</strong> {{ step.content.name }}</li>
+                      <li><strong>Total Parameters:</strong> {{ step.content.total_parameters|format_number }}</li>
+                      <li><strong>Labels:</strong> {{ step.content.labels|join(', ') }}</li>
+                    </ul>
+                    <h5>Config</h5>
+                    <ul>
+                      <li><strong>Hidden Size:</strong> {{ step.content.config.hidden_size }}</li>
+                      <li><strong>Num Hidden Layers:</strong> {{ step.content.config.num_hidden_layers }}</li>
+                      <li><strong>Num Attention Heads:</strong> {{ step.content.config.num_attention_heads }}</li>
+                      <li><strong>Intermediate Size:</strong> {{ step.content.config.intermediate_size }}</li>
+                      <li><strong>Vocab Size:</strong> {{ step.content.config.vocab_size }}</li>
+                    </ul>
+                  </div>
+                  <div class="col-md-6">
+                    <h5>Sample Layers</h5>
+                    <table class="table table-sm table-bordered">
+                      <thead>
+                        <tr><th>Name</th><th>Shape</th><th>Parameters</th></tr>
+                      </thead>
+                      <tbody>
+                        {% for layer in step.content.sample_layers %}
+                        <tr>
+                          <td>{{ layer.name }}</td>
+                          <td>{{ layer.shape }}</td>
+                          <td>{{ layer.parameters|format_number }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+              {% elif step.title == 'Training Process' %}
+                <div class="row">
+                  <div class="col-md-6">
+                    <h5>Training Configuration</h5>
+                    <ul>
+                      <li><strong>Epochs:</strong> {{ step.content.epochs }}</li>
+                      <li><strong>Batch Size:</strong> {{ step.content.batch_size }}</li>
+                      <li><strong>Learning Rate:</strong> {{ step.content.learning_rate }}</li>
+                    </ul>
+                    
+                    <h5>Training Metrics Summary</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        <p><strong>Initial Loss:</strong> {{ step.content.training_metrics.initial_loss|round(4) }}</p>
+                        <p><strong>Final Loss:</strong> {{ step.content.training_metrics.final_loss|round(4) }}</p>
+                        <p><strong>Loss Reduction:</strong> {{ step.content.training_metrics.loss_reduction|round(4) }}</p>
+                        <p><strong>Loss Reduction %:</strong> {{ step.content.training_metrics.loss_reduction_percent|round(2) }}%</p>
+                        <p><strong>Best Eval Loss:</strong> {{ step.content.training_metrics.best_eval_loss|round(4) }}</p>
+                        <p><strong>Convergence Rate:</strong> {{ step.content.training_metrics.convergence_rate|round(4) }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    {% if step.content.sample_batch %}
+                    <h5>Sample Batch</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        <p><strong>Input IDs:</strong> {{ step.content.sample_batch.input_ids[:10] }}...</p>
+                        <p><strong>Label:</strong> 
+                          <span class="badge {% if step.content.sample_batch.label == 1 %}badge-positive{% else %}badge-negative{% endif %}">
+                            {% if step.content.sample_batch.label == 1 %}Positive{% else %}Negative{% endif %}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <h5 class="mt-4">Training Progress</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <img src="data:image/png;base64,{{ step.content.training_loss_chart }}" class="img-fluid chart-container">
+                  </div>
+                  <div class="col-md-6">
+                    <img src="data:image/png;base64,{{ step.content.combined_loss_chart }}" class="img-fluid chart-container">
+                  </div>
+                </div>
+                
+                <h5 class="mt-3">Loss Values</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6>Training Loss</h6>
+                    <table class="table table-sm">
+                      <thead><tr><th>Step</th><th>Loss</th></tr></thead>
+                      <tbody>
+                        {% for i in range(step.content.metrics.steps|length) %}
+                        <tr>
+                          <td>{{ step.content.metrics.steps[i] }}</td>
+                          <td>{{ step.content.metrics.losses[i]|round(4) }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="col-md-6">
+                    <h6>Evaluation Loss</h6>
+                    <table class="table table-sm">
+                      <thead><tr><th>Step</th><th>Loss</th></tr></thead>
+                      <tbody>
+                        {% for i in range(step.content.metrics.eval_steps|length) %}
+                        <tr>
+                          <td>{{ step.content.metrics.eval_steps[i] }}</td>
+                          <td>{{ step.content.metrics.eval_losses[i]|round(4) }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+              {% elif step.title == 'Inference Results' %}
+                <div class="row">
+                  <div class="col-md-4">
+                    <h5>Model Performance</h5>
+                    <div class="card">
+                      <div class="card-body">
+                        <p><strong>Model:</strong> {{ step.content.model_name }}</p>
+                        <p><strong>Predictions:</strong></p>
+                        <ul>
+                          <li>Positive: {{ step.content.prediction_distribution.Positive }}</li>
+                          <li>Negative: {{ step.content.prediction_distribution.Negative }}</li>
+                        </ul>
+                        <hr>
+                        <p><strong>Confidence Statistics:</strong></p>
+                        <ul>
+                          <li>Mean: {{ step.content.confidence_stats.mean|round(3) }}</li>
+                          <li>Min: {{ step.content.confidence_stats.min|round(3) }}</li>
+                          <li>Max: {{ step.content.confidence_stats.max|round(3) }}</li>
+                          <li>Std: {{ step.content.confidence_stats.std|round(3) }}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-8">
+                    <h5>Sample Predictions</h5>
+                    {% for result in step.content.results %}
+                      <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                          <span>Sample {{ loop.index }}</span>
+                          <div>
+                            <span class="badge {% if result.label == 'Positive' %}badge-positive{% else %}badge-negative{% endif %}">
+                              {{ result.label }}
+                            </span>
+                            <span class="badge bg-secondary">{{ (result.confidence * 100)|round(1) }}%</span>
+                          </div>
+                        </div>
+                        <div class="card-body">
+                          <p>{{ result.text }}</p>
+                          <div class="row">
+                            <div class="col-md-6">
+                              <strong>Negative:</strong> {{ (result.probs.negative * 100)|round(1) }}%
+                              <div class="progress mb-2">
+                                <div class="progress-bar bg-danger" style="width: {{ (result.probs.negative * 100)|round(1) }}%"></div>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <strong>Positive:</strong> {{ (result.probs.positive * 100)|round(1) }}%
+                              <div class="progress mb-2">
+                                <div class="progress-bar bg-success" style="width: {{ (result.probs.positive * 100)|round(1) }}%"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                
+                <h5 class="mt-4">Analysis Charts</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <img src="data:image/png;base64,{{ step.content.confidence_chart }}" class="img-fluid chart-container">
+                  </div>
+                  <div class="col-md-6">
+                    <img src="data:image/png;base64,{{ step.content.prediction_chart }}" class="img-fluid chart-container">
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer mt-5 py-4 bg-light">
+      <div class="container text-center">
+        <div class="row">
+          <div class="col-md-12">
+            <h5><i class="bi bi-cpu"></i> <strong>LLM Factory</strong></h5>
+            <p class="text-muted">Advanced Machine Learning Pipeline Visualization & Analysis Platform</p>
+            <small class="text-muted">
+              Built with <i class="bi bi-heart-fill text-danger"></i> using Flask, Bootstrap, and Transformers
+              <br>
+              <span class="badge bg-secondary">BERT-base-uncased</span>
+              <span class="badge bg-info">Sentiment Analysis</span>
+              <span class="badge bg-warning text-dark">IMDb Dataset</span>
+            </small>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>
