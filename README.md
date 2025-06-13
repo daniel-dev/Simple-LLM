@@ -8,9 +8,9 @@
 [![CI/CD](https://github.com/YOUR_USERNAME/llm-factory/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/llm-factory/actions)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://hub.docker.com/)
 
-**LLM Factory** is a comprehensive machine learning pipeline visualization platform that provides detailed insights into every stage of the fine-tuning process, from raw data analysis to model inference.
+**Interactive Pipeline Visualization & Analysis** is a comprehensive machine learning pipeline visualization platform that provides detailed insights into every stage of the fine-tuning process, from raw data analysis to model inference.
 
-![LLM Factory Dashboard](docs/screenshots/dashboard-main.png)
+![Dashboard](docs/screenshots/dashboard-main.png)
 *Main dashboard showing the complete pipeline visualization*
 
 ## 🚀 Quick Start
