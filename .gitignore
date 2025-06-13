@@ -163,6 +163,7 @@ cython_debug/
 *.pkl
 *.pickle
 *.joblib
+*.safetensors
 
 # Large datasets (add to Git LFS if needed)
 data/raw/*.csv
